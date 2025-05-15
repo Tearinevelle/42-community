@@ -190,90 +190,11 @@ export default function Chat() {
     );
   }
 
-  // Sample data for when the API doesn't have data yet
-  const sampleChats = [
-    {
-      id: 1,
-      otherUser: {
-        id: 2,
-        displayName: "Мария К.",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=50&h=50",
-        isOnline: true,
-        lastSeen: null
-      },
-      lastMessage: {
-        content: "Здравствуйте! Я хотела бы узнать подробнее о вашем товаре...",
-        createdAt: new Date().toISOString(),
-        read: false,
-        senderId: 2
-      }
-    },
-    {
-      id: 2,
-      otherUser: {
-        id: 3,
-        displayName: "Иван С.",
-        avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=50&h=50",
-        isOnline: true,
-        lastSeen: null
-      },
-      lastMessage: {
-        content: "Спасибо за быструю доставку! Всё отлично работает.",
-        createdAt: new Date().toISOString(),
-        read: true,
-        senderId: 3
-      }
-    }
-  ];
+  // Empty arrays for when the API doesn't have data yet
+  const sampleChats = [];
 
-  // Sample messages for when the API doesn't have data yet
-  const sampleMessages = activeChat ? [
-    {
-      id: 1,
-      chatId: activeChat,
-      content: "Здравствуйте! Интересует ваш товар. Можно узнать подробнее?",
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      read: true,
-      senderId: activeChat === 1 ? 2 : 3,
-      sender: {
-        id: activeChat === 1 ? 2 : 3,
-        displayName: activeChat === 1 ? "Мария К." : "Иван С.",
-        avatar: activeChat === 1 
-          ? "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=50&h=50" 
-          : "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=50&h=50"
-      }
-    },
-    {
-      id: 2,
-      chatId: activeChat,
-      content: "Добрый день! Конечно, что именно вас интересует?",
-      createdAt: new Date(Date.now() - 3540000).toISOString(),
-      read: true,
-      senderId: user?.id || 1,
-      sender: {
-        id: user?.id || 1,
-        displayName: user?.displayName || "Вы",
-        avatar: user?.avatar || null
-      }
-    },
-    {
-      id: 3,
-      chatId: activeChat,
-      content: activeChat === 1 
-        ? "Какие характеристики у ноутбука? Он новый или был в использовании?" 
-        : "Гитара в хорошем состоянии? Есть какие-то повреждения?",
-      createdAt: new Date(Date.now() - 3480000).toISOString(),
-      read: true,
-      senderId: activeChat === 1 ? 2 : 3,
-      sender: {
-        id: activeChat === 1 ? 2 : 3,
-        displayName: activeChat === 1 ? "Мария К." : "Иван С.",
-        avatar: activeChat === 1 
-          ? "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=50&h=50" 
-          : "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=50&h=50"
-      }
-    }
-  ] : [];
+  // Empty messages array when no messages are available
+  const sampleMessages = [];
 
   // Use actual data or sample data if none available
   const displayChats = chats?.length > 0 ? chats : sampleChats;
