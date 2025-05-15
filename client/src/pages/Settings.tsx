@@ -150,83 +150,12 @@ export default function Settings() {
         </p>
       </div>
       
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 mb-6">
-          <TabsTrigger value="profile">Профиль</TabsTrigger>
+      <Tabs defaultValue="notifications" className="w-full">
+        <TabsList className="w-full grid grid-cols-3 mb-6">
           <TabsTrigger value="notifications">Уведомления</TabsTrigger>
           <TabsTrigger value="privacy">Приватность</TabsTrigger>
           <TabsTrigger value="security">Безопасность</TabsTrigger>
         </TabsList>
-        
-        {/* Profile Settings */}
-        <TabsContent value="profile">
-          <Card className="bg-card">
-            <CardHeader>
-              <CardTitle>Настройки профиля</CardTitle>
-              <CardDescription>
-                Настройте отображение своего профиля на платформе
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="displayName">Отображаемое имя</Label>
-                <Input
-                  id="displayName"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Ваше имя"
-                  className="bg-muted"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="bio">О себе</Label>
-                <Textarea
-                  id="bio"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Расскажите о себе..."
-                  className="bg-muted min-h-[100px]"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Цвет баннера</Label>
-                <div className="grid grid-cols-5 gap-3">
-                  {gradients.map((gradient, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={`h-12 rounded-lg ${gradient} ${bannerColor === gradient ? 'ring-2 ring-secondary' : ''}`}
-                      onClick={() => setBannerColor(gradient)}
-                    />
-                  ))}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="username">Имя пользователя (Telegram)</Label>
-                <Input
-                  id="username"
-                  value={user?.username || ""}
-                  disabled
-                  className="bg-muted opacity-70"
-                />
-                <p className="text-xs text-gray-400">Имя пользователя привязано к вашему аккаунту в Telegram и не может быть изменено</p>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline">Отмена</Button>
-              <Button 
-                className="bg-secondary hover:bg-secondary/90"
-                onClick={handleSaveProfile}
-                disabled={updateProfileMutation.isPending}
-              >
-                {updateProfileMutation.isPending ? "Сохранение..." : "Сохранить изменения"}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
         
         {/* Notification Settings */}
         <TabsContent value="notifications">

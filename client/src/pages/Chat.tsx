@@ -190,15 +190,47 @@ export default function Chat() {
     );
   }
 
+  // Define types for chats and messages
+  interface ChatWithUser {
+    id: number;
+    otherUser: {
+      id: number;
+      displayName: string;
+      avatar: string | null;
+      isOnline: boolean;
+      lastSeen: string | null;
+    };
+    lastMessage?: {
+      content: string;
+      createdAt: string;
+      read: boolean;
+      senderId: number;
+    };
+  }
+  
+  interface MessageWithSender {
+    id: number;
+    chatId: number;
+    content: string;
+    createdAt: string;
+    read: boolean;
+    senderId: number;
+    sender: {
+      id: number;
+      displayName: string;
+      avatar: string | null;
+    };
+  }
+  
   // Empty arrays for when the API doesn't have data yet
-  const sampleChats = [];
+  const sampleChats: ChatWithUser[] = [];
 
   // Empty messages array when no messages are available
-  const sampleMessages = [];
+  const sampleMessages: MessageWithSender[] = [];
 
   // Use actual data or sample data if none available
-  const displayChats = chats?.length > 0 ? chats : sampleChats;
-  const displayMessages = messages?.length > 0 ? messages : sampleMessages;
+  const displayChats: ChatWithUser[] = (chats?.length > 0 ? chats : sampleChats) as ChatWithUser[];
+  const displayMessages: MessageWithSender[] = (messages?.length > 0 ? messages : sampleMessages) as MessageWithSender[];
 
   return (
     <div className="flex h-[calc(100vh-9rem)] md:h-[calc(100vh-11rem)] overflow-hidden">
@@ -219,7 +251,7 @@ export default function Chat() {
             <i className="fas fa-search absolute left-3 top-3 text-gray-500"></i>
           </div>
           <div className="space-y-2">
-            {displayChats.map((chat) => {
+            {displayChats.map((chat: ChatWithUser) => {
               const isActive = activeChat === chat.id;
               const isUnread = chat.lastMessage && !chat.lastMessage.read;
               
@@ -277,7 +309,7 @@ export default function Chat() {
           <>
             {/* Chat header */}
             <div className="p-4 border-b border-gray-800 flex items-center">
-              {displayChats.map((chat) => {
+              {displayChats.map((chat: ChatWithUser) => {
                 if (chat.id === activeChat) {
                   return (
                     <div key={chat.id} className="flex items-center">
