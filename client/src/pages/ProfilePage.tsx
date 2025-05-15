@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User } from "@shared/schema";
+import type { User } from "@shared/schema";
 import { 
   Tabs, 
   TabsContent, 
@@ -24,7 +24,64 @@ import EventCard from "@/components/events/EventCard";
 import VideoCard from "@/components/videos/VideoCard";
 import { apiRequest } from "@/lib/api";
 import { Edit, Settings, Image, CalendarDays, ShoppingBag, FileVideo } from "lucide-react";
-import { HexColorPicker } from "@hello-pangea/color-picker";
+import { ChromePicker, TwitterPicker } from "react-color";
+
+// Расширенный интерфейс пользователя для нашего приложения
+interface ExtendedUser extends User {
+  status?: string;
+  profileImageUrl?: string;
+  bannerImageUrl?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+// Интерфейсы для типов данных в приложении
+interface Post {
+  id: number;
+  title: string;
+  content: string;
+  authorId: number;
+  createdAt: string;
+  author: User;
+}
+
+interface Product {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  sellerId: number;
+  image: string | null;
+  createdAt: string;
+  seller: User;
+}
+
+interface Event {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  organizerId: number;
+  image: string | null;
+  location: string | null;
+  eventType: string;
+  category: string;
+  participantsCount: number | null;
+  createdAt: string;
+  organizer: User;
+}
+
+interface Video {
+  id: number;
+  title: string;
+  description: string;
+  authorId: number;
+  url: string;
+  thumbnailUrl: string | null;
+  viewCount: number;
+  createdAt: string;
+  author: User;
+}
 
 const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean, onOpenChange: (open: boolean) => void, currentUser: User | undefined }) => {
   const queryClient = useQueryClient();
@@ -183,17 +240,19 @@ const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean,
           <div className="space-y-2">
             <Label>Цвет интерфейса</Label>
             <div className="flex flex-col space-y-2">
-              <HexColorPicker color={interfaceColor} onChange={setInterfaceColor} />
-              <div className="flex justify-between items-center mt-2">
-                <span>Выбранный цвет:</span>
-                <div 
-                  className="w-12 h-6 rounded-md border"
-                  style={{ backgroundColor: interfaceColor }}
+              <div className="picker-container" style={{ margin: "0 auto" }}>
+                <ChromePicker
+                  color={interfaceColor}
+                  onChange={(color) => setInterfaceColor(color.hex)}
+                  disableAlpha={true}
                 />
-                <Input
-                  value={interfaceColor}
-                  onChange={(e) => setInterfaceColor(e.target.value)}
-                  className="w-28"
+              </div>
+              <div className="flex items-center mt-2 gap-2">
+                <span>Цветовые темы:</span>
+                <TwitterPicker
+                  color={interfaceColor}
+                  onChange={(color) => setInterfaceColor(color.hex)}
+                  triangle="hide"
                 />
               </div>
             </div>
