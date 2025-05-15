@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Post, Product, Event, Video } from "@shared/schema";
+import { User } from "@shared/schema";
 import { 
   Tabs, 
   TabsContent, 
@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import PostCard from "@/components/feed/PostCard";
 import ProductCard from "@/components/marketplace/ProductCard";
@@ -23,6 +24,7 @@ import EventCard from "@/components/events/EventCard";
 import VideoCard from "@/components/videos/VideoCard";
 import { apiRequest } from "@/lib/api";
 import { Edit, Settings, Image, CalendarDays, ShoppingBag, FileVideo } from "lucide-react";
+import { HexColorPicker } from "@hello-pangea/color-picker";
 
 const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean, onOpenChange: (open: boolean) => void, currentUser: User | undefined }) => {
   const queryClient = useQueryClient();
@@ -35,6 +37,9 @@ const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean,
   const [username, setUsername] = useState(currentUser?.username || "");
   const [bio, setBio] = useState(currentUser?.bio || "");
   const [status, setStatus] = useState(currentUser?.status || "");
+  const [gender, setGender] = useState(currentUser?.gender || "");
+  const [bannerColor, setBannerColor] = useState(currentUser?.bannerColor || "");
+  const [interfaceColor, setInterfaceColor] = useState<string>("#6366f1"); // По умолчанию цвет интерфейса
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [bannerImage, setBannerImage] = useState<File | null>(null);
 
@@ -43,6 +48,8 @@ const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean,
       setUsername(currentUser.username || "");
       setBio(currentUser.bio || "");
       setStatus(currentUser.status || "");
+      setGender(currentUser.gender || "");
+      setBannerColor(currentUser.bannerColor || "");
     }
   }, [currentUser]);
 
@@ -64,6 +71,9 @@ const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean,
       formData.append("username", username);
       formData.append("bio", bio);
       formData.append("status", status);
+      formData.append("gender", gender);
+      formData.append("bannerColor", bannerColor);
+      formData.append("interfaceColor", interfaceColor);
 
       if (profileImage) {
         formData.append("profileImage", profileImage);
@@ -146,6 +156,47 @@ const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean,
               placeholder="Расскажите о себе"
               className="min-h-[100px]"
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Пол</Label>
+            <RadioGroup 
+              value={gender} 
+              onValueChange={setGender}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="male" id="male" />
+                <Label htmlFor="male">Мужской</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="female" id="female" />
+                <Label htmlFor="female">Женский</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="other" id="other" />
+                <Label htmlFor="other">Другой</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Цвет интерфейса</Label>
+            <div className="flex flex-col space-y-2">
+              <HexColorPicker color={interfaceColor} onChange={setInterfaceColor} />
+              <div className="flex justify-between items-center mt-2">
+                <span>Выбранный цвет:</span>
+                <div 
+                  className="w-12 h-6 rounded-md border"
+                  style={{ backgroundColor: interfaceColor }}
+                />
+                <Input
+                  value={interfaceColor}
+                  onChange={(e) => setInterfaceColor(e.target.value)}
+                  className="w-28"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
