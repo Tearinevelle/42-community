@@ -23,6 +23,7 @@ export const users = pgTable("users", {
   gender: text("gender"), // "male", "female", "other"
   bannerColor: text("banner_color").default("from-purple-500 to-blue-500"),
   bio: text("bio"),
+  status: text("status"), // Статус пользователя
   rank: text("rank").default("Чебоксарец"), // Primary rank displayed
   role: text("role").default("user"), // "owner", "admin", "moderator", "user"
   isBanned: boolean("is_banned").default(false),

@@ -126,6 +126,7 @@ const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean,
     mutationFn: async () => {
       const formData = new FormData();
       formData.append("username", username);
+      formData.append("displayName", username); // Используем username также как displayName
       formData.append("bio", bio);
       formData.append("status", status);
       formData.append("gender", gender);
@@ -143,7 +144,7 @@ const EditProfileDialog = ({ open, onOpenChange, currentUser }: { open: boolean,
       const response = await fetch("/api/user/profile", {
         method: "PUT",
         body: formData,
-        credentials: "include",
+        credentials: "include"
       });
 
       if (!response.ok) {

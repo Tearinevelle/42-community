@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage as dbStorage } from "./storage";
 import { WebSocketServer } from "ws";
@@ -53,6 +53,9 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Настройка статических файлов для загрузок
+  app.use('/uploads', express.static('uploads'));
+  
   // Session setup
   app.use(
     session({
