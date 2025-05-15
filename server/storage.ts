@@ -19,6 +19,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getAllUsers(offset?: number, limit?: number): Promise<User[]>;
   updateUserRole(id: number, role: string): Promise<void>;
+  updateUserProfile(id: number, updateData: Partial<User>): Promise<User>;
   banUser(id: number, reason: string): Promise<void>;
   unbanUser(id: number): Promise<void>;
   muteUser(id: number, muteEndTime: Date, reason: string): Promise<void>;
@@ -104,6 +105,24 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ role })
       .where(eq(users.id, id));
+  }
+  
+  async updateUserProfile(id: number, updateData: Partial<User>): Promise<User> {
+    // Исключаем критичные поля, которые нельзя менять здесь
+    const { id: _, role, isBanned, banReason, isMuted, muteEndTime, muteReason, activityPoints, rating, transactionsCount, createdAt, ...safeUpdateData } = updateData as any;
+    
+    // Обновляем профиль пользователя
+    await db.update(users)
+      .set(safeUpdateData)
+      .where(eq(users.id, id));
+    
+    // Получаем обновленные данные пользователя
+    const user = await this.getUser(id);
+    if (!user) {
+      throw new Error(`User with id ${id} not found`);
+    }
+    
+    return user;
   }
 
   async banUser(id: number, reason: string): Promise<void> {
