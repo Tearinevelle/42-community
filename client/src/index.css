@@ -2,57 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-      --background: 0 0% 100%;
---foreground: 20 14.3% 4.1%;
---muted: 60 4.8% 95.9%;
---muted-foreground: 25 5.3% 44.7%;
---popover: 0 0% 100%;
---popover-foreground: 20 14.3% 4.1%;
---card: 0 0% 100%;
---card-foreground: 20 14.3% 4.1%;
---border: 20 5.9% 90%;
---input: 20 5.9% 90%;
---primary: 207 90% 54%;
---primary-foreground: 211 100% 99%;
---secondary: 60 4.8% 95.9%;
---secondary-foreground: 24 9.8% 10%;
---accent: 60 4.8% 95.9%;
---accent-foreground: 24 9.8% 10%;
---destructive: 0 84.2% 60.2%;
---destructive-foreground: 60 9.1% 97.8%;
---ring: 20 14.3% 4.1%;
---radius: 0.5rem;
+@layer base {
+  :root {
+    --background: 0 0% 0%; /* Black background */
+    --foreground: 0 0% 100%; /* White text */
+    
+    --card: 0 0% 10%; /* Dark gray card background */
+    --card-foreground: 0 0% 100%; /* White text on cards */
+    
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+    
+    --primary: 0 0% 0%; /* Black primary */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 350 80% 50%; /* #e31937 - Red secondary */
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 0 0% 20%; /* #333333 - Medium gray */
+    --muted-foreground: 0 0% 70%;
+    
+    --accent: 0 0% 27%; /* #444444 - Light gray */
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 350 80% 50%; /* Same as secondary for destructive actions */
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 15%; /* Darker border */
+    --input: 0 0% 15%;
+    --ring: 350 80% 50%;
+    
+    --radius: 0.5rem;
   }
-  .dark {
-      --background: 240 10% 3.9%;
---foreground: 0 0% 98%;
---muted: 240 3.7% 15.9%;
---muted-foreground: 240 5% 64.9%;
---popover: 240 10% 3.9%;
---popover-foreground: 0 0% 98%;
---card: 240 10% 3.9%;
---card-foreground: 0 0% 98%;
---border: 240 3.7% 15.9%;
---input: 240 3.7% 15.9%;
---primary: 207 90% 54%;
---primary-foreground: 211 100% 99%;
---secondary: 240 3.7% 15.9%;
---secondary-foreground: 0 0% 98%;
---accent: 240 3.7% 15.9%;
---accent-foreground: 0 0% 98%;
---destructive: 0 62.8% 30.6%;
---destructive-foreground: 0 0% 98%;
---ring: 240 4.9% 83.9%;
---radius: 0.5rem;
-  }
+}
 
 @layer base {
   * {
     @apply border-border;
   }
-
+  
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Roboto', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-montserrat font-bold;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-card;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-secondary rounded-sm;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-secondary/90;
+  }
+}
+
+@layer components {
+  .gradient-border {
+    @apply relative rounded-lg z-[1];
+  }
+  
+  .gradient-border::before {
+    content: "";
+    @apply absolute -inset-[2px] bg-gradient-to-br from-secondary to-background rounded-[0.6rem] z-[-1];
+  }
+  
+  .notification-dot {
+    @apply absolute w-2 h-2 bg-secondary rounded-full top-0 right-0;
+  }
+  
+  .gradient-main {
+    @apply bg-gradient-to-br from-background to-secondary;
+  }
+  
+  .gradient-card {
+    @apply bg-gradient-to-br from-card to-muted;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }
