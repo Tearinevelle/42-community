@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage as dbStorage } from "./storage";
 import { WebSocketServer } from "ws";
 import { WebSocket } from "ws";
 import { z } from "zod";
@@ -9,8 +9,48 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import passport from "passport";
 import { randomBytes } from "crypto";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { nanoid } from "nanoid";
 
 const SessionStore = MemoryStore(session);
+
+// Настройка хранилища для загрузки файлов
+const multerStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Определяем папку назначения в зависимости от типа файла
+    const destFolder = file.fieldname === 'profileImage' ? 'uploads/avatars' : 'uploads/banners';
+    cb(null, destFolder);
+  },
+  filename: function (req, file, cb) {
+    // Уникальное имя файла с сохранением расширения
+    const uniqueName = nanoid(10) + path.extname(file.originalname);
+    cb(null, uniqueName);
+  }
+});
+
+// Фильтр файлов - разрешаем только изображения
+const fileFilter = (req: any, file: any, cb: any) => {
+  if (
+    file.mimetype === 'image/jpeg' || 
+    file.mimetype === 'image/png' || 
+    file.mimetype === 'image/gif' ||
+    file.mimetype === 'image/webp'
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error('Неподдерживаемый формат файла. Разрешены только JPEG, PNG, GIF и WebP.'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: multerStorage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB максимальный размер
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session setup
@@ -37,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await storage.getUser(id);
+      const user = await dbStorage.getUser(id);
       done(null, user);
     } catch (error) {
       done(error, null);
@@ -81,11 +121,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // В продакшене здесь должна быть проверка данных Telegram, но для тестирования оставим так
       // В реальном приложении нужно проверить хеш с использованием секретного токена
 
-      let user = await storage.getUserByTelegramId(telegramId);
+      let user = await dbStorage.getUserByTelegramId(telegramId);
 
       if (!user) {
         // Create new user
-        user = await storage.createUser({
+        user = await dbStorage.createUser({
           telegramId,
           username,
           displayName,
@@ -95,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Update online status
-        await storage.updateUserOnlineStatus(user.id, true);
+        await dbStorage.updateUserOnlineStatus(user.id, true);
       }
 
       // Log user in
@@ -113,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/logout", (req, res) => {
     if (req.user) {
       const userId = (req.user as any).id;
-      storage.updateUserOnlineStatus(userId, false);
+      dbStorage.updateUserOnlineStatus(userId, false);
     }
     req.logout((err) => {
       if (err) {
@@ -135,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/popular", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 3;
-      const popularUsers = await storage.getPopularUsers(limit);
+      const popularUsers = await dbStorage.getPopularUsers(limit);
       res.json(popularUsers);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch popular users", error });
@@ -144,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/users/:id", async (req, res) => {
     try {
-      const user = await storage.getUser(parseInt(req.params.id));
+      const user = await dbStorage.getUser(parseInt(req.params.id));
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -153,12 +193,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user", error });
     }
   });
+  
+  // Обновление профиля пользователя с загрузкой файлов
+  app.put(
+    "/api/user/profile",
+    isAuthenticated,
+    upload.fields([
+      { name: "profileImage", maxCount: 1 },
+      { name: "bannerImage", maxCount: 1 }
+    ]),
+    async (req, res) => {
+      try {
+        const userId = (req.user as any).id;
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+        
+        // Получаем данные для обновления профиля
+        const updateData: any = {
+          displayName: req.body.displayName,
+          bio: req.body.bio,
+          gender: req.body.gender,
+          bannerColor: req.body.bannerColor,
+        };
+        
+        // Если был загружен аватар, сохраняем путь к нему
+        if (files.profileImage && files.profileImage[0]) {
+          const avatarPath = files.profileImage[0].path;
+          updateData.avatar = `/${avatarPath}`;
+        }
+        
+        // Если был загружен баннер, создаем CSS-градиент или сохраняем путь к изображению
+        if (files.bannerImage && files.bannerImage[0]) {
+          const bannerPath = files.bannerImage[0].path;
+          // Сохраняем путь к баннеру в отдельном поле
+          updateData.bannerImage = `/${bannerPath}`;
+        }
+        
+        // Обновляем профиль
+        const updatedUser = await dbStorage.updateUserProfile(userId, updateData);
+        
+        res.json(updatedUser);
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        res.status(500).json({ message: "Failed to update profile", error });
+      }
+    }
+  );
 
   // Chats
   app.get("/api/chats", isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
-      const userChats = await storage.getUserChats(userId);
+      const userChats = await dbStorage.getUserChats(userId);
       res.json(userChats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch chats", error });
@@ -172,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request", errors: result.error.errors });
       }
 
-      const chat = await storage.createChat(result.data);
+      const chat = await dbStorage.createChat(result.data);
       res.status(201).json(chat);
     } catch (error) {
       res.status(500).json({ message: "Failed to create chat", error });
@@ -184,10 +269,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatId = parseInt(req.params.id);
       const userId = (req.user as any).id;
 
-      const messages = await storage.getChatMessages(chatId);
+      const messages = await dbStorage.getChatMessages(chatId);
 
       // Mark messages as read
-      await storage.markMessagesAsRead(chatId, userId);
+      await dbStorage.markMessagesAsRead(chatId, userId);
 
       res.json(messages);
     } catch (error) {
@@ -199,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/listings/popular", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 4;
-      const listings = await storage.getPopularListings(limit);
+      const listings = await dbStorage.getPopularListings(limit);
       res.json(listings);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch listings", error });
@@ -208,13 +293,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/listings/:id", async (req, res) => {
     try {
-      const listing = await storage.getListing(parseInt(req.params.id));
+      const listing = await dbStorage.getListing(parseInt(req.params.id));
       if (!listing) {
         return res.status(404).json({ message: "Listing not found" });
       }
 
       // Increment view count
-      await storage.updateListingViews(listing.id);
+      await dbStorage.updateListingViews(listing.id);
 
       res.json(listing);
     } catch (error) {
@@ -225,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Categories
   app.get("/api/categories", async (req, res) => {
     try {
-      const categories = await storage.getCategories();
+      const categories = await dbStorage.getCategories();
       res.json(categories);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch categories", error });
@@ -240,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Auto-approve if owner
       const isOwner = (req.user as any).telegramId === "1182231717";
       
-      const category = await storage.createCategory({
+      const category = await dbStorage.createCategory({
         name,
         slug,
         creatorId: userId,
@@ -256,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/categories/:id/approve", isAdmin, async (req, res) => {
     try {
       const categoryId = parseInt(req.params.id);
-      await storage.approveCategory(categoryId);
+      await dbStorage.approveCategory(categoryId);
       res.json({ message: "Category approved" });
     } catch (error) {
       res.status(500).json({ message: "Failed to approve category", error });
@@ -275,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request", errors: result.error.errors });
       }
 
-      const listing = await storage.createListing(result.data);
+      const listing = await dbStorage.createListing(result.data);
       res.status(201).json(listing);
     } catch (error) {
       res.status(500).json({ message: "Failed to create listing", error });
@@ -286,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/events/upcoming", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 3;
-      const events = await storage.getUpcomingEvents(limit);
+      const events = await dbStorage.getUpcomingEvents(limit);
       res.json(events);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch events", error });
@@ -295,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/events/:id", async (req, res) => {
     try {
-      const event = await storage.getEvent(parseInt(req.params.id));
+      const event = await dbStorage.getEvent(parseInt(req.params.id));
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
@@ -316,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request", errors: result.error.errors });
       }
 
-      const event = await storage.createEvent(result.data);
+      const event = await dbStorage.createEvent(result.data);
       res.status(201).json(event);
     } catch (error) {
       res.status(500).json({ message: "Failed to create event", error });
@@ -328,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const eventId = parseInt(req.params.id);
       const userId = (req.user as any).id;
 
-      await storage.participateInEvent(eventId, userId);
+      await dbStorage.participateInEvent(eventId, userId);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to join event", error });
@@ -339,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/blog/recent", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 2;
-      const posts = await storage.getRecentBlogPosts(limit);
+      const posts = await dbStorage.getRecentBlogPosts(limit);
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch blog posts", error });
@@ -357,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request", errors: result.error.errors });
       }
 
-      const post = await storage.createBlogPost(result.data);
+      const post = await dbStorage.createBlogPost(result.data);
       res.status(201).json(post);
     } catch (error) {
       res.status(500).json({ message: "Failed to create blog post", error });
@@ -368,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/recent", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 4;
-      const videos = await storage.getRecentVideos(limit);
+      const videos = await dbStorage.getRecentVideos(limit);
       res.json(videos);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch videos", error });
@@ -386,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request", errors: result.error.errors });
       }
 
-      const video = await storage.createVideo(result.data);
+      const video = await dbStorage.createVideo(result.data);
       res.status(201).json(video);
     } catch (error) {
       res.status(500).json({ message: "Failed to create video", error });
@@ -398,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const offset = parseInt(req.query.offset as string) || 0;
       const limit = parseInt(req.query.limit as string) || 50;
-      const users = await storage.getAllUsers(offset, limit);
+      const users = await dbStorage.getAllUsers(offset, limit);
       res.json(users);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch users", error });
@@ -408,7 +493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin - get all ranks
   app.get("/api/admin/ranks", isAdmin, async (req, res) => {
     try {
-      const ranks = await storage.getAllRanks();
+      const ranks = await dbStorage.getAllRanks();
       res.json(ranks);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch ranks", error });
@@ -428,7 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request", errors: result.error.errors });
       }
       
-      const rank = await storage.createRank(result.data);
+      const rank = await dbStorage.createRank(result.data);
       res.status(201).json(rank);
     } catch (error) {
       res.status(500).json({ message: "Failed to create rank", error });
@@ -439,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/users/:id/ranks", isAdmin, async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      const userRanks = await storage.getUserRanks(userId);
+      const userRanks = await dbStorage.getUserRanks(userId);
       res.json(userRanks);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user ranks", error });
@@ -464,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request", errors: result.error.errors });
       }
       
-      await storage.assignRankToUser(result.data);
+      await dbStorage.assignRankToUser(result.data);
       res.json({ message: "Rank assigned successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to assign rank", error });
@@ -477,7 +562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const rankId = parseInt(req.params.rankId);
       
-      await storage.removeRankFromUser(userId, rankId);
+      await dbStorage.removeRankFromUser(userId, rankId);
       res.json({ message: "Rank removed successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to remove rank", error });
@@ -494,7 +579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Rank is required" });
       }
       
-      await storage.updateUserPrimaryRank(userId, rank);
+      await dbStorage.updateUserPrimaryRank(userId, rank);
       res.json({ message: "Primary rank updated successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to update primary rank", error });
@@ -511,7 +596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid points value is required" });
       }
       
-      await storage.addActivityPoints(userId, points);
+      await dbStorage.addActivityPoints(userId, points);
       res.json({ message: "Activity points added successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to add activity points", error });
@@ -528,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid role is required (user, moderator, admin)" });
       }
       
-      const targetUser = await storage.getUser(userId);
+      const targetUser = await dbStorage.getUser(userId);
       
       // Владелец не может быть изменен
       if (targetUser?.role === "owner") {
@@ -540,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only owner can promote to admin" });
       }
 
-      await storage.updateUserRole(userId, role);
+      await dbStorage.updateUserRole(userId, role);
       res.json({ message: `User role updated to ${role}` });
     } catch (error) {
       res.status(500).json({ message: "Failed to update user role", error });
@@ -557,14 +642,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Ban reason is required" });
       }
       
-      const targetUser = await storage.getUser(userId);
+      const targetUser = await dbStorage.getUser(userId);
       
       // Нельзя банить владельца или администраторов
       if (targetUser?.role === "owner" || targetUser?.role === "admin") {
         return res.status(403).json({ message: "Cannot ban owner or admin" });
       }
 
-      await storage.banUser(userId, reason);
+      await dbStorage.banUser(userId, reason);
       res.json({ message: "User banned successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to ban user", error });
@@ -575,7 +660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/users/:id/unban", isAdmin, async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      await storage.unbanUser(userId);
+      await dbStorage.unbanUser(userId);
       res.json({ message: "User unbanned successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to unban user", error });
@@ -592,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Duration (in seconds) and reason are required" });
       }
       
-      const targetUser = await storage.getUser(userId);
+      const targetUser = await dbStorage.getUser(userId);
       
       if (!targetUser) {
         return res.status(404).json({ message: "User not found" });
@@ -604,7 +689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const muteEndTime = new Date(Date.now() + duration * 1000);
-      await storage.muteUser(userId, muteEndTime, reason);
+      await dbStorage.muteUser(userId, muteEndTime, reason);
       
       res.json({ message: "User muted successfully" });
     } catch (error) {
@@ -616,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/users/:id/unmute", isAdmin, async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      await storage.unmuteUser(userId);
+      await dbStorage.unmuteUser(userId);
       res.json({ message: "User unmuted successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to unmute user", error });
@@ -652,17 +737,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const validatedData = messageSchema.parse(data);
 
-          const newMessage = await storage.sendMessage({
+          const newMessage = await dbStorage.sendMessage({
             chatId: validatedData.chatId,
             senderId: userId,
             content: validatedData.content
           });
 
           // Get the full message with sender info
-          const [messageFull] = await storage.getChatMessages(newMessage.chatId);
+          const [messageFull] = await dbStorage.getChatMessages(newMessage.chatId);
 
           // Get chat to determine recipient
-          const chats = await storage.getUserChats(userId);
+          const chats = await dbStorage.getUserChats(userId);
           const chat = chats.find(c => c.id === newMessage.chatId);
 
           if (chat) {
@@ -695,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('close', () => {
       if (userId) {
         clients.delete(userId);
-        storage.updateUserOnlineStatus(userId, false);
+        dbStorage.updateUserOnlineStatus(userId, false);
       }
     });
   });
