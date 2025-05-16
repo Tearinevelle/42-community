@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Event, User } from "@shared/schema";
 import EventCard from "@/components/events/EventCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,36 +12,37 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Calendar, Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Search, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Calendar, Filter } from "lucide-react";
 
 const EventsPage = () => {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState("upcoming");
   const pageSize = 10;
 
-  // Form state for creating event
+  // Form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [eventTitle, setEventTitle] = useState("");
-  const [eventDescription, setEventDescription] = useState("");
-  const [eventLocation, setEventLocation] = useState("");
-  const [eventStartDate, setEventStartDate] = useState("");
-  const [eventEndDate, setEventEndDate] = useState("");
-  const [eventStartTime, setEventStartTime] = useState("");
-  const [eventEndTime, setEventEndTime] = useState("");
-  const [eventImage, setEventImage] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [eventType, setEventType] = useState("offline");
+  const [game, setGame] = useState("");
+  const [customGame, setCustomGame] = useState("");
+  const [squads, setSquads] = useState("");
+  const [participants, setParticipants] = useState("");
 
-  // Fetch events with pagination and filtering
+  // Fetch events
   const { data: events = [], isLoading, isFetching } = useQuery<(Event & { user: User })[]>({
     queryKey: ['/api/events', { limit: pageSize, offset: page * pageSize, timeFilter, search: searchQuery }],
     queryFn: async () => {
@@ -61,20 +62,7 @@ const EventsPage = () => {
 
   // Create event mutation
   const createEventMutation = useMutation({
-    mutationFn: async () => {
-      const formData = new FormData();
-      formData.append("title", eventTitle);
-      formData.append("description", eventDescription);
-      formData.append("location", eventLocation);
-      formData.append("startDate", eventStartDate);
-      formData.append("endDate", eventEndDate);
-      formData.append("startTime", eventStartTime);
-      formData.append("endTime", eventEndTime);
-
-      if (eventImage) {
-        formData.append("image", eventImage);
-      }
-
+    mutationFn: async (formData: FormData) => {
       const response = await fetch("/api/events", {
         method: "POST",
         body: formData,
@@ -93,29 +81,30 @@ const EventsPage = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/events'] });
       toast({
         title: "Успех!",
-        description: "Ваше мероприятие успешно создано",
+        description: "Ваше мероприятие отправлено на рассмотрение",
         variant: "default",
       });
     },
     onError: (error) => {
       toast({
         title: "Ошибка",
-        description: "Не удалось создать мероприятие. Пожалуйста, попробуйте еще раз.",
+        description: "Не удалось создать мероприятие",
         variant: "destructive",
       });
-      console.error(error);
     }
   });
 
   const resetForm = () => {
-    setEventTitle("");
-    setEventDescription("");
-    setEventLocation("");
-    setEventStartDate("");
-    setEventEndDate("");
-    setEventStartTime("");
-    setEventEndTime("");
-    setEventImage(null);
+    setTitle("");
+    setDescription("");
+    setLocation("");
+    setDate("");
+    setTime("");
+    setEventType("offline");
+    setGame("");
+    setCustomGame("");
+    setSquads("");
+    setParticipants("");
   };
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -123,18 +112,10 @@ const EventsPage = () => {
     if (!open) resetForm();
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setEventImage(e.target.files[0]);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation
-    if (!eventTitle || !eventDescription || !eventLocation || 
-        !eventStartDate || !eventEndDate || !eventStartTime || !eventEndTime) {
+    if (!title || !description || !location || !date || !time) {
       toast({
         title: "Ошибка",
         description: "Пожалуйста, заполните все обязательные поля",
@@ -143,7 +124,19 @@ const EventsPage = () => {
       return;
     }
 
-    createEventMutation.mutate();
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("location", location);
+    formData.append("date", date);
+    formData.append("time", time);
+    formData.append("eventType", eventType);
+    formData.append("game", eventType === "online" ? (game === "other" ? customGame : game) : "");
+    formData.append("squads", squads);
+    formData.append("participants", participants);
+    formData.append("status", "pending");
+
+    createEventMutation.mutate(formData);
   };
 
   const loadMoreEvents = () => {
@@ -160,6 +153,9 @@ const EventsPage = () => {
     setPage(0); // Reset to first page when changing filter
   };
 
+
+  const queryClient = useQueryClient();
+
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
@@ -172,42 +168,28 @@ const EventsPage = () => {
             <div id="events-login-button"></div>
           </div>
         ) : (
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Создать мероприятие
               </Button>
             </DialogTrigger>
-                <Plus className="h-4 w-4 mr-2" />
-                Создать мероприятие
-              </Button>
-            </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
-              {!isAuthenticated ? (
-                <>
-                  <DialogHeader>
-                    <DialogTitle>Создание мероприятия</DialogTitle>
-                    <DialogDescription>
-                      Чтобы создать мероприятие, пожалуйста, войдите через Telegram
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex justify-center py-4">
-                    <div id="events-login-button"></div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <DialogHeader>
-                    <DialogTitle>Создание мероприятия</DialogTitle>
-                  </DialogHeader>
-                  <form className="space-y-4" onSubmit={handleSubmit}>
+              <DialogHeader>
+                <DialogTitle>Создание мероприятия</DialogTitle>
+                <DialogDescription>
+                  Заполните информацию о мероприятии
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Название мероприятия *</Label>
                   <Input
                     id="title"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     placeholder="Введите название мероприятия"
                     required
                   />
@@ -217,95 +199,114 @@ const EventsPage = () => {
                   <Label htmlFor="description">Описание *</Label>
                   <Textarea
                     id="description"
-                    value={eventDescription}
-                    onChange={(e) => setEventDescription(e.target.value)}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     placeholder="Опишите ваше мероприятие"
-                    className="min-h-[100px]"
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Тип мероприятия *</Label>
+                  <RadioGroup value={eventType} onValueChange={setEventType}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="offline" id="offline" />
+                      <Label htmlFor="offline">Офлайн</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="online" id="online" />
+                      <Label htmlFor="online">Онлайн</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {eventType === "online" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="game">Игра *</Label>
+                    <Select value={game} onValueChange={setGame}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите игру" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="minecraft">Minecraft</SelectItem>
+                        <SelectItem value="roblox">Roblox</SelectItem>
+                        <SelectItem value="other">Другая</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {game === "other" && (
+                      <Input
+                        placeholder="Укажите игру"
+                        value={customGame}
+                        onChange={(e) => setCustomGame(e.target.value)}
+                        className="mt-2"
+                      />
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="location">Место проведения *</Label>
                   <Input
                     id="location"
-                    value={eventLocation}
-                    onChange={(e) => setEventLocation(e.target.value)}
-                    placeholder="Адрес или название места"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder={eventType === "online" ? "Ссылка или сервер" : "Адрес места проведения"}
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">Дата начала *</Label>
+                    <Label htmlFor="date">Дата *</Label>
                     <Input
-                      id="startDate"
+                      id="date"
                       type="date"
-                      value={eventStartDate}
-                      onChange={(e) => setEventStartDate(e.target.value)}
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="endDate">Дата окончания *</Label>
+                    <Label htmlFor="time">Время *</Label>
                     <Input
-                      id="endDate"
-                      type="date"
-                      value={eventEndDate}
-                      onChange={(e) => setEventEndDate(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startTime">Время начала *</Label>
-                    <Input
-                      id="startTime"
-                      value={eventStartTime}
-                      onChange={(e) => setEventStartTime(e.target.value)}
-                      placeholder="например, 18:00"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endTime">Время окончания *</Label>
-                    <Input
-                      id="endTime"
-                      value={eventEndTime}
-                      onChange={(e) => setEventEndTime(e.target.value)}
-                      placeholder="например, 21:00"
+                      id="time"
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="image">Изображение</Label>
+                  <Label htmlFor="squads">Участвующие сквады</Label>
                   <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
+                    id="squads"
+                    value={squads}
+                    onChange={(e) => setSquads(e.target.value)}
+                    placeholder="Укажите сквады через запятую"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Рекомендуемый размер: 1200x600px
-                  </p>
                 </div>
 
-                <div className="flex justify-end mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="participants">Уже записавшиеся участники</Label>
+                  <Input
+                    id="participants"
+                    value={participants}
+                    onChange={(e) => setParticipants(e.target.value)}
+                    placeholder="Укажите участников через запятую"
+                  />
+                </div>
+
+                <DialogFooter>
                   <Button
                     type="submit"
                     disabled={createEventMutation.isPending}
                   >
-                    {createEventMutation.isPending ? "Создание..." : "Создать мероприятие"}
+                    {createEventMutation.isPending ? "Отправка..." : "Отправить на рассмотрение"}
                   </Button>
-                </div>
+                </DialogFooter>
               </form>
-                </>
-              )}
             </DialogContent>
           </Dialog>
         )}
