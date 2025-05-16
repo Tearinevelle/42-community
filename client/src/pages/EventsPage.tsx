@@ -170,11 +170,23 @@ const EventsPage = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
-              {isAuthenticated ? (
-                
+              {!isAuthenticated ? (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Требуется авторизация</DialogTitle>
+                    <DialogDescription>
+                      Для создания мероприятия необходимо войти в систему
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col items-center gap-4 p-6">
+                    <i className="fas fa-info-circle text-secondary text-2xl"></i>
+                    <p className="text-center">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</p>
+                    <div id="events-login-button"></div>
+                  </div>
+                </>
+              ) : (
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  if (!isAuthenticated) {
                     toast({
                       title: "Ошибка",
                       description: "Необходимо авторизоваться",
