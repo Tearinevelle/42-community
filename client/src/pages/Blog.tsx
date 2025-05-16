@@ -73,7 +73,13 @@ export default function Blog() {
     <>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold mb-4">Блог</h1>
-        {isAuthenticated ? (
+        {!isAuthenticated ? (
+          <div className="flex items-center gap-2">
+            <i className="fas fa-info-circle text-secondary"></i>
+            <span className="text-sm text-gray-500">Чтобы выложить статью, войдите через Telegram</span>
+            <div id="blog-login-button"></div>
+          </div>
+        ) : (
           <Dialog>
             <DialogTrigger asChild>
               <Button className="bg-secondary hover:bg-secondary/90 md:w-auto w-full">
@@ -142,12 +148,6 @@ export default function Blog() {
               </div>
             </DialogContent>
           </Dialog>
-        ) : (
-          <div className="flex items-center gap-2">
-            <i className="fas fa-info-circle text-secondary"></i>
-            <span className="text-sm text-gray-500">Чтобы выложить статью, войдите через Telegram</span>
-            <div id="blog-login-button"></div>
-          </div>
         )}
       </div>
 
@@ -163,7 +163,7 @@ export default function Blog() {
             />
             <i className="fas fa-search absolute left-3 top-3 text-gray-500"></i>
           </div>
-          
+
         </div>
         <div className="flex flex-wrap gap-2">
           <Tabs defaultValue="all" className="w-full" onValueChange={(val) => setCategory(val)}>
