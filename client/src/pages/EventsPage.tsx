@@ -183,12 +183,6 @@ const EventsPage = () => {
                         Заполните информацию о мероприятии
                       </DialogDescription>
                     </DialogHeader>
-              <DialogHeader>
-                <DialogTitle>Создание мероприятия</DialogTitle>
-                <DialogDescription>
-                  Заполните информацию о мероприятии
-                </DialogDescription>
-              </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
