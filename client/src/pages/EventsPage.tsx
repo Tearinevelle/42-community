@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Event, User } from "@shared/schema";
 import EventCard from "@/components/events/EventCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,12 +85,13 @@ const EventsPage = () => {
         variant: "default",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: "Не удалось создать мероприятие",
+        description: error.message || "Не удалось создать мероприятие",
         variant: "destructive",
       });
+      console.error("Create event error:", error);
     }
   });
 
@@ -170,13 +171,33 @@ const EventsPage = () => {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               {!isAuthenticated ? (
-                <div className="flex flex-col items-center gap-4 p-6">
-                  <i className="fas fa-info-circle text-secondary text-2xl"></i>
-                  <p className="text-center">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</p>
-                  <div id="events-login-button"></div>
-                </div>
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Требуется авторизация</DialogTitle>
+                    <DialogDescription>
+                      Для создания мероприятия необходимо войти в систему
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col items-center gap-4 p-6">
+                    <i className="fas fa-info-circle text-secondary text-2xl"></i>
+                    <p className="text-center">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</p>
+                    <div id="events-login-button"></div>
+                  </div>
+                </>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!isAuthenticated) {
+                    toast({
+                      title: "Ошибка",
+                      description: "Необходимо авторизоваться",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  handleSubmit(e);
+                }} 
+                className="space-y-4">
                   <DialogHeader>
                     <DialogTitle>Создание мероприятия</DialogTitle>
                     <DialogDescription>
