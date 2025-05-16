@@ -184,12 +184,24 @@ const EventsPage = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Создание мероприятия</DialogTitle>
-              </DialogHeader>
-
-
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              {!isAuthenticated ? (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Создание мероприятия</DialogTitle>
+                    <DialogDescription>
+                      Чтобы создать мероприятие, пожалуйста, войдите через Telegram
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex justify-center py-4">
+                    <div id="events-login-button"></div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Создание мероприятия</DialogTitle>
+                  </DialogHeader>
+                  <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-2">
                   <Label htmlFor="title">Название мероприятия *</Label>
                   <Input
@@ -292,7 +304,8 @@ const EventsPage = () => {
                   </Button>
                 </div>
               </form>
-
+                </>
+              )}
             </DialogContent>
           </Dialog>
         )}
