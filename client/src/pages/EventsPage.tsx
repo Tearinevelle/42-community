@@ -161,13 +161,14 @@ const EventsPage = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold font-heading">Мероприятия</h1>
 
-        {!isAuthenticated ? (
+        {!isAuthenticated && (
           <div className="flex items-center gap-2">
             <i className="fas fa-info-circle text-secondary"></i>
             <span className="text-sm text-gray-500">Чтобы создать мероприятие, войдите через Telegram</span>
             <div id="events-login-button"></div>
           </div>
-        ) : (
+        )}
+        {isAuthenticated && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
