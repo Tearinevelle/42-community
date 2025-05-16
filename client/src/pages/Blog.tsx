@@ -73,13 +73,7 @@ export default function Blog() {
     <>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold mb-4">Блог</h1>
-        {!isAuthenticated ? (
-          <div className="flex items-center gap-2">
-            <i className="fas fa-info-circle text-secondary"></i>
-            <span className="text-sm text-gray-500">Чтобы выложить статью, войдите через Telegram</span>
-            <div id="blog-login-button"></div>
-          </div>
-        ) : (
+        {isAuthenticated ? (
           <Dialog>
             <DialogTrigger asChild>
               <Button className="bg-secondary hover:bg-secondary/90 md:w-auto w-full">
@@ -148,6 +142,12 @@ export default function Blog() {
               </div>
             </DialogContent>
           </Dialog>
+        ) : (
+          <div className="flex items-center gap-2">
+            <i className="fas fa-info-circle text-secondary"></i>
+            <span className="text-sm text-gray-500">Чтобы выложить статью, войдите через Telegram</span>
+            <div id="blog-login-button"></div>
+          </div>
         )}
       </div>
 
