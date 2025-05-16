@@ -168,30 +168,21 @@ const EventsPage = () => {
                 Создать мероприятие
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[600px]">
               {!isAuthenticated ? (
-                <>
-                  <DialogHeader>
-                    <DialogTitle>Требуется авторизация</DialogTitle>
-                    <DialogDescription>
-                      Для создания мероприятия необходимо войти в систему
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex flex-col items-center gap-4 p-6">
-                    <i className="fas fa-info-circle text-secondary text-2xl"></i>
-                    <p className="text-center">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</p>
-                    <div id="events-login-button"></div>
-                  </div>
-                </>
+                <div className="flex flex-col items-center gap-4 p-6">
+                  <i className="fas fa-info-circle text-secondary text-2xl"></i>
+                  <p className="text-center">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</p>
+                  <div id="events-login-button"></div>
+                </div>
               ) : (
-                <>
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <DialogHeader>
                     <DialogTitle>Создание мероприятия</DialogTitle>
                     <DialogDescription>
                       Заполните информацию о мероприятии
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Название мероприятия *</Label>
                   <Input
@@ -307,15 +298,14 @@ const EventsPage = () => {
                 </div>
 
                 <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={createEventMutation.isPending}
-                  >
-                    {createEventMutation.isPending ? "Отправка..." : "Отправить на рассмотрение"}
-                  </Button>
-                </DialogFooter>
+                    <Button
+                      type="submit"
+                      disabled={createEventMutation.isPending}
+                    >
+                      {createEventMutation.isPending ? "Отправка..." : "Отправить на рассмотрение"}
+                    </Button>
+                  </DialogFooter>
                 </form>
-                </>
               )}
             </DialogContent>
           </Dialog>
