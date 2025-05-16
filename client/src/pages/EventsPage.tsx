@@ -165,7 +165,13 @@ const EventsPage = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold font-heading">Мероприятия</h1>
 
-        {isAuthenticated && (
+        {!isAuthenticated ? (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center">
+            <i className="fas fa-user-circle text-6xl text-secondary mb-4"></i>
+            <h1 className="text-2xl font-bold mb-2">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</h1>
+            <div id="events-login-button"></div>
+          </div>
+        ) : (
           <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button>
