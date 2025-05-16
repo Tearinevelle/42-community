@@ -85,16 +85,6 @@ export default function Blog() {
               <DialogHeader>
                 <DialogTitle>Создание статьи</DialogTitle>
               </DialogHeader>
-            </DialogContent>
-          </Dialog>
-        ) : (
-          <div className="flex items-center gap-2">
-            <i className="fas fa-info-circle text-secondary"></i>
-            <span className="text-sm text-gray-500">Чтобы выложить статью, войдите через Telegram</span>
-            <div id="blog-login-button"></div>
-          </div>
-        )}
-              </DialogHeader>
               <div className="space-y-4 py-2">
                 <form className="space-y-4">
                     <div className="space-y-2">
@@ -152,7 +142,13 @@ export default function Blog() {
               </div>
             </DialogContent>
           </Dialog>
-        
+        ) : (
+          <div className="flex items-center gap-2">
+            <i className="fas fa-info-circle text-secondary"></i>
+            <span className="text-sm text-gray-500">Чтобы выложить статью, войдите через Telegram</span>
+            <div id="blog-login-button"></div>
+          </div>
+        )}
       </div>
 
       {/* Search and filters */}
