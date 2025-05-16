@@ -111,6 +111,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(403).json({ message: "Forbidden" });
   };
 
+  // Wallet routes
+  app.get("/api/wallet", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const wallet = await dbStorage.getUserWallet(userId);
+      res.json(wallet);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch wallet", error });
+    }
+  });
+
+  app.get("/api/wallet/transactions", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const status = req.query.status as string;
+      const type = req.query.type as string;
+      
+      const transactions = await dbStorage.getWalletTransactions(userId, status, type);
+      res.json(transactions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch transactions", error });
+    }
+  });
+
+  app.post("/api/wallet/withdraw", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { amount, method } = req.body;
+      
+      const transaction = await dbStorage.createWithdrawal(userId, amount, method);
+      res.json(transaction);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create withdrawal", error });
+    }
+  });
+
   // API Routes
   // Auth
   app.post("/api/auth/telegram", async (req, res) => {

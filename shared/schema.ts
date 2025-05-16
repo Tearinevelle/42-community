@@ -13,7 +13,26 @@ export const ranks = pgTable("ranks", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Users table
+// Таблица кошельков пользователей
+export const wallets = pgTable("wallets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  balance: integer("balance").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Таблица транзакций
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  walletId: integer("wallet_id").notNull().references(() => wallets.id),
+  type: text("type").notNull(), // "deposit", "withdrawal", "order_payment", "order_completion"
+  amount: integer("amount").notNull(),
+  status: text("status").default("pending"), // "pending", "completed", "cancelled"
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -101,8 +120,8 @@ export const listings = pgTable("listings", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Transactions
-export const transactions = pgTable("transactions", {
+// Transactions (Marketplace)
+export const marketplaceTransactions = pgTable("marketplace_transactions", {
   id: serial("id").primaryKey(),
   listingId: integer("listing_id").references(() => listings.id),
   buyerId: integer("buyer_id").notNull().references(() => users.id),
