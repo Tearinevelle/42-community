@@ -71,25 +71,9 @@ export default function Blog() {
 
   return (
     <>
-      <div className="mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold mb-4">Блог</h1>
-        <p className="text-gray-400">
-          Делитесь своими мыслями, читайте интересные статьи от других пользователей
-        </p>
-      </div>
-
-      {/* Search and filters */}
-      <div className="bg-card rounded-lg p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="relative flex-1">
-            <Input
-              placeholder="Поиск в блоге..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-muted"
-            />
-            <i className="fas fa-search absolute left-3 top-3 text-gray-500"></i>
-          </div>
+        {isAuthenticated ? (
           <Dialog>
             <DialogTrigger asChild>
               <Button className="bg-secondary hover:bg-secondary/90 md:w-auto w-full">
@@ -97,6 +81,13 @@ export default function Blog() {
                 Добавить пост
               </Button>
             </DialogTrigger>
+        ) : (
+          <div className="flex items-center gap-2">
+            <i className="fas fa-info-circle text-secondary"></i>
+            <span className="text-sm text-gray-500">Чтобы выложить статью, войдите через Telegram</span>
+            <div id="blog-login-button"></div>
+          </div>
+        )}
             <DialogContent className="bg-card text-foreground">
               <DialogHeader>
                 <DialogTitle>Создание статьи</DialogTitle>
@@ -158,6 +149,22 @@ export default function Blog() {
               </div>
             </DialogContent>
           </Dialog>
+        
+      </div>
+
+      {/* Search and filters */}
+      <div className="bg-card rounded-lg p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="relative flex-1">
+            <Input
+              placeholder="Поиск в блоге..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-muted"
+            />
+            <i className="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+          </div>
+          
         </div>
         <div className="flex flex-wrap gap-2">
           <Tabs defaultValue="all" className="w-full" onValueChange={(val) => setCategory(val)}>
