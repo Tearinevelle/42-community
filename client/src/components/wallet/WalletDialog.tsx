@@ -1,10 +1,10 @@
 
-import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { formatCurrency } from "@/lib/utils";
 
 interface WalletDialogProps {
   open: boolean;
@@ -12,89 +12,82 @@ interface WalletDialogProps {
 }
 
 export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("balance");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedType, setSelectedType] = useState("all");
+  const { isAuthenticated } = useAuth();
 
-  // Fetch wallet data
   const { data: wallet } = useQuery({
     queryKey: ['/api/wallet'],
-    queryFn: () => apiRequest('GET', '/api/wallet'),
+    enabled: isAuthenticated,
   });
 
-  // Fetch transactions
   const { data: transactions } = useQuery({
-    queryKey: ['/api/wallet/transactions', selectedStatus, selectedType],
-    queryFn: () => apiRequest('GET', `/api/wallet/transactions?status=${selectedStatus}&type=${selectedType}`),
+    queryKey: ['/api/wallet/transactions'],
+    enabled: isAuthenticated,
   });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Кошелёк</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col space-y-4">
-          {/* Баланс */}
-          <div className="bg-card p-4 rounded-lg">
-            <div className="text-sm text-gray-400">Баланс:</div>
-            <div className="text-2xl font-bold">{wallet?.balance || 0} ₽</div>
+        <div className="space-y-6">
+          {/* Balance */}
+          <div className="bg-card p-6 rounded-lg">
+            <div className="text-sm text-muted-foreground">Баланс</div>
+            <div className="text-3xl font-bold">{formatCurrency(wallet?.balance || 0)}</div>
           </div>
 
-          {/* Действия */}
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" onClick={() => setActiveTab("withdraw")}>
-              <i className="fas fa-wallet mr-2"></i>
+          {/* Actions */}
+          <div className="flex gap-4">
+            <Button className="flex-1" variant="outline">
               Вывести средства
             </Button>
-            <Button variant="outline" onClick={() => setActiveTab("methods")}>
-              <i className="fas fa-credit-card mr-2"></i>
+            <Button className="flex-1">
               Способы вывода
             </Button>
           </div>
 
-          {/* Фильтры */}
+          {/* Filters */}
           <div className="flex gap-4">
-            <select 
-              className="bg-input p-2 rounded-md"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <option value="all">Все статусы</option>
-              <option value="pending">В ожидании</option>
-              <option value="completed">Завершено</option>
-              <option value="cancelled">Отменено</option>
-            </select>
+            <Select defaultValue="all">
+              <SelectTrigger>
+                <SelectValue placeholder="Статус" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все</SelectItem>
+                <SelectItem value="pending">В ожидании</SelectItem>
+                <SelectItem value="completed">Завершено</SelectItem>
+                <SelectItem value="cancelled">Отменено</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
-              className="bg-input p-2 rounded-md"
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-            >
-              <option value="all">Все типы</option>
-              <option value="deposit">Пополнение баланса</option>
-              <option value="order_completion">Выполнение заказа</option>
-              <option value="order_payment">Оплата заказа</option>
-              <option value="withdrawal">Вывод средств</option>
-            </select>
+            <Select defaultValue="all">
+              <SelectTrigger>
+                <SelectValue placeholder="Тип" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все</SelectItem>
+                <SelectItem value="deposit">Пополнение баланса</SelectItem>
+                <SelectItem value="order_complete">Выполнение заказа</SelectItem>
+                <SelectItem value="order_payment">Оплата заказа</SelectItem>
+                <SelectItem value="withdrawal">Вывод средств</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Транзакции */}
-          <div className="space-y-2">
+          {/* Transactions */}
+          <div className="space-y-4">
             <h3 className="font-semibold">Транзакции</h3>
             <div className="space-y-2">
               {transactions?.map((transaction) => (
-                <div key={transaction.id} className="bg-card p-3 rounded-lg flex justify-between items-center">
+                <div key={transaction.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
                   <div>
                     <div className="font-medium">{transaction.description}</div>
-                    <div className="text-sm text-gray-400">
-                      {new Date(transaction.createdAt).toLocaleString()}
-                    </div>
+                    <div className="text-sm text-muted-foreground">{transaction.date}</div>
                   </div>
-                  <div className={`font-bold ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {transaction.amount > 0 ? '+' : ''}{transaction.amount} ₽
+                  <div className={transaction.type === 'deposit' ? 'text-green-500' : 'text-red-500'}>
+                    {formatCurrency(transaction.amount)}
                   </div>
                 </div>
               ))}

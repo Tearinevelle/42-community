@@ -177,8 +177,8 @@ const EventsPage = () => {
               <DialogHeader>
                 <DialogTitle>Создание мероприятия</DialogTitle>
               </DialogHeader>
-              
-              
+
+
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-2">
                   <Label htmlFor="title">Название мероприятия *</Label>
@@ -282,7 +282,7 @@ const EventsPage = () => {
                   </Button>
                 </div>
               </form>
-            
+
             </DialogContent>
           </Dialog>
         )}
