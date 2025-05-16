@@ -170,21 +170,28 @@ const EventsPage = () => {
             </DialogTrigger>
             <DialogContent>
               {!isAuthenticated ? (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Требуется авторизация</DialogTitle>
+                    <DialogDescription>
+                      Для создания мероприятия необходимо войти в систему
+                    </DialogDescription>
+                  </DialogHeader>
                   <div className="flex flex-col items-center gap-4 p-6">
                     <i className="fas fa-info-circle text-secondary text-2xl"></i>
                     <p className="text-center">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</p>
                     <div id="events-login-button"></div>
                   </div>
-                ) : (
-                  <>
-                    <DialogHeader>
-                      <DialogTitle>Создание мероприятия</DialogTitle>
-                      <DialogDescription>
-                        Заполните информацию о мероприятии
-                      </DialogDescription>
-                    </DialogHeader>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
+                </>
+              ) : (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Создание мероприятия</DialogTitle>
+                    <DialogDescription>
+                      Заполните информацию о мероприятии
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Название мероприятия *</Label>
                   <Input
@@ -307,7 +314,8 @@ const EventsPage = () => {
                     {createEventMutation.isPending ? "Отправка..." : "Отправить на рассмотрение"}
                   </Button>
                 </DialogFooter>
-              </form>
+                </form>
+                </>
               )}
             </DialogContent>
           </Dialog>
