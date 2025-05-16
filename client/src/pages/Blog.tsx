@@ -81,6 +81,12 @@ export default function Blog() {
                 Добавить пост
               </Button>
             </DialogTrigger>
+            <DialogContent className="bg-card text-foreground">
+              <DialogHeader>
+                <DialogTitle>Создание статьи</DialogTitle>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
         ) : (
           <div className="flex items-center gap-2">
             <i className="fas fa-info-circle text-secondary"></i>
@@ -88,9 +94,6 @@ export default function Blog() {
             <div id="blog-login-button"></div>
           </div>
         )}
-            <DialogContent className="bg-card text-foreground">
-              <DialogHeader>
-                <DialogTitle>Создание статьи</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <form className="space-y-4">
