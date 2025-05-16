@@ -170,17 +170,19 @@ const EventsPage = () => {
             </DialogTrigger>
             <DialogContent>
               {!isAuthenticated ? (
-                <div className="flex flex-col items-center gap-4 p-6">
-                  <i className="fas fa-info-circle text-secondary text-2xl"></i>
-                  <p className="text-center">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</p>
-                  <div id="events-login-button"></div>
-                </div>
-              ) : (
-                <Plus className="h-4 w-4 mr-2" />
-                Создать мероприятие
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+                  <div className="flex flex-col items-center gap-4 p-6">
+                    <i className="fas fa-info-circle text-secondary text-2xl"></i>
+                    <p className="text-center">Чтобы создать мероприятие, пожалуйста, войдите через Telegram</p>
+                    <div id="events-login-button"></div>
+                  </div>
+                ) : (
+                  <>
+                    <DialogHeader>
+                      <DialogTitle>Создание мероприятия</DialogTitle>
+                      <DialogDescription>
+                        Заполните информацию о мероприятии
+                      </DialogDescription>
+                    </DialogHeader>
               <DialogHeader>
                 <DialogTitle>Создание мероприятия</DialogTitle>
                 <DialogDescription>
